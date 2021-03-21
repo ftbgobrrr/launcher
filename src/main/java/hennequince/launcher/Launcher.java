@@ -9,6 +9,8 @@ import hennequince.launcher.ui.components.Notification;
 import io.sentry.Sentry;
 import io.sentry.protocol.User;
 import launchit.Launchit;
+import launchit.launcher.LauncherFile;
+import launchit.launcher.events.ILauncherHandler;
 import launchit.LaunchitConfig;
 import launchit.auth.error.YggdrasilError;
 import launchit.auth.profile.LauncherProfiles;
@@ -22,6 +24,8 @@ import launchit.utils.UrlUtils;
 import org.greenrobot.eventbus.Subscribe;
 
 import javax.swing.*;
+
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Objects;
@@ -29,7 +33,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public class Launcher extends Handler {
+public class Launcher extends Handler implements ILauncherHandler {
 
     private static Launcher instance;
     private Frame frame;
@@ -37,14 +41,19 @@ public class Launcher extends Handler {
     private Launchit launchit;
     private FontManager fontManager;
     private ConsoleFrame console;
+    private final File bootloaderFile;
+
+    public Launcher(String bootloaderPath) {
+        this.bootloaderFile = new File(bootloaderPath);
+    }
 
     public void init() {
         try {
             launchit = new LaunchitConfig()
                     .setInstallFolder(FilesUtils.getInstallDir(".hennequince"))
                     .setLauncherName("hennequince")
-                    .setManifestUrl("http://launcher-api.hennequince.fr/manifest")
-                    .setNewsUrl("http://launcher-api.hennequince.fr/news")
+                    .setManifestUrl("https://launcher-api.hennequince.fr/manifest")
+                    .setNewsUrl("https://launcher-api.hennequince.fr/news")
                     .create();
 
             getLogger().addHandler(this);
@@ -71,6 +80,15 @@ public class Launcher extends Handler {
                     launchit.getSessionManager().doRefresh(launchit.getSessionManager().getLauncherProfiles().getSelectedProfile());
                 }
             } else getFrame().getMainPanel().getRouter().setCurrentRoute("login");
+            if (network) {
+                try {
+                    Launcher.getLogger().info("Checking Bootloader " + bootloaderFile.getCanonicalPath().toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                launchit.getLauncherManager().setiLauncherHandler(this);
+                launchit.getLauncherManager().checkForUpdate(LauncherFile.Type.BOOTLOADER, bootloaderFile);
+            }
             getLogger().info("Authentication checked");
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -113,7 +131,8 @@ public class Launcher extends Handler {
     }
 
     public static void main(String[] args) {
-        instance = new Launcher();
+        
+        instance = new Launcher(args[0]);
         instance.init();
     }
 
@@ -152,9 +171,6 @@ public class Launcher extends Handler {
 
     @Override
     public void publish(LogRecord record) {
-
-
-
         String message = "[" + record.getLevel().getName() + "] " + record.getMessage();
         ConsoleFrame.getLauncherLogs().add(message);
         if (console != null && Objects.equals(console.getSelect().getSelectedItem(), "launcher")) {
@@ -167,4 +183,30 @@ public class Launcher extends Handler {
 
     @Override
     public void close() throws SecurityException {}
+
+    @Override
+    public void endChecking(LauncherFile file, boolean needUpdate) {
+        if (needUpdate) {
+            launchit.getLauncherManager().update(file, bootloaderFile);
+        }
+    }
+
+    @Override
+    public void startUpdate(LauncherFile file) {
+        getFrame().getMainPanel().getProgressBar().setVisible(true);
+        getFrame().getMainPanel().getProgressBar().setvLabel("Updating Bootloader...");
+        Launcher.getLogger().info("Updating Bootloader");
+    }
+
+    @Override
+    public void updateProgress(LauncherFile file, int current, int total) {
+        getFrame().getMainPanel().getProgressBar().setValue(((double)current * 100) / (double)total);
+    }
+
+    @Override
+    public void updateFinished(LauncherFile file, boolean error) {
+        getFrame().getMainPanel().getProgressBar().setValue(0);
+        getFrame().getMainPanel().getProgressBar().setvLabel("");
+        getFrame().getMainPanel().getProgressBar().setVisible(false);
+    }
 }

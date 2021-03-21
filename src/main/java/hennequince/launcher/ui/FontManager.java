@@ -22,7 +22,7 @@ public class FontManager {
             setUIFont(new FontUIResource(marcellus));
         } catch (FontFormatException | IOException e) {
             e.printStackTrace();
-            Launcher.getLogger().severe("impossible des charger les fonts");
+            Launcher.getLogger().severe("Impossible des charger les fonts");
         }
     }
 

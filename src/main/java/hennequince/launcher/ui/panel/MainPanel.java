@@ -282,4 +282,8 @@ public class MainPanel extends JPanel implements ActionListener {
     public ImageButton getAccounts() {
         return accounts;
     }
+
+    public ProgressBar getProgressBar() {
+        return progressBar;
+    }
 }
