@@ -60,7 +60,7 @@ public class SettingsFrame extends JFrame implements ActionListener {
         ramc.setFont(new Font("Arial", Font.PLAIN, 12));
         for (int i = 1; i < (deviceMemory) / 1024L; i++)
             ramc.addItem(i * 1024);
-        int ram = OperatingSystem.getArchMinRam();
+        int ram = (int)Math.min(1024 * 6, deviceMemory / 2 * 1024);
         if(p.getSettings().getRam() != 0)
             ram = p.getSettings().getRam();
         ramc.setSelectedItem(ram);

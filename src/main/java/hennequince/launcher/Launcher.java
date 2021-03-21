@@ -6,6 +6,8 @@ import hennequince.launcher.ui.frames.Frame;
 import hennequince.launcher.ui.panel.MainPanel;
 import hennequince.launcher.ui.frames.SettingsFrame;
 import hennequince.launcher.ui.components.Notification;
+import io.sentry.Sentry;
+import io.sentry.protocol.User;
 import launchit.Launchit;
 import launchit.LaunchitConfig;
 import launchit.auth.error.YggdrasilError;
@@ -15,6 +17,7 @@ import launchit.formatter.Manifest;
 import launchit.formatter.versions.Version;
 import launchit.formatter.versions.VersionType;
 import launchit.utils.FilesUtils;
+import launchit.utils.OperatingSystem;
 import launchit.utils.UrlUtils;
 import org.greenrobot.eventbus.Subscribe;
 
@@ -149,6 +152,9 @@ public class Launcher extends Handler {
 
     @Override
     public void publish(LogRecord record) {
+
+
+
         String message = "[" + record.getLevel().getName() + "] " + record.getMessage();
         ConsoleFrame.getLauncherLogs().add(message);
         if (console != null && Objects.equals(console.getSelect().getSelectedItem(), "launcher")) {
